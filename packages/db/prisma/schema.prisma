@@ -1,0 +1,146 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Product Hierarchy
+model Product {
+  id                    String          @id @default(uuid())
+  name                  String
+  category              ProductCategory
+  productType           ProductType
+  baseProductionTimeMins Int            @default(45)
+  isActive              Boolean         @default(true)
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  variations            Variation[]
+}
+
+model Variation {
+  id          String    @id @default(uuid())
+  productId   String
+  colorName   String
+  colorHex    String?
+  fabricId    String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  product     Product   @relation(fields: [productId], references: [id])
+  fabric      Fabric?   @relation(fields: [fabricId], references: [id])
+  skus        Sku[]
+}
+
+model Sku {
+  id                  String              @id @default(uuid())
+  skuCode             String              @unique
+  variationId         String
+  size                Size
+  fabricConsumption   Decimal             @db.Decimal(10, 3)  // meters per piece
+  mrp                 Decimal             @db.Decimal(10, 2)
+  targetStockQty      Int                 @default(10)
+  targetStockMethod   TargetStockMethod   @default(FOURTEEN_DAY)
+  isActive            Boolean             @default(true)
+  createdAt           DateTime            @default(now())
+
+  variation           Variation           @relation(fields: [variationId], references: [id])
+}
+
+// Fabric Management
+model FabricType {
+  id              String      @id @default(uuid())
+  name            String      // "Linen 60 Lea"
+  composition     String      // "100% Linen"
+  unit            FabricUnit
+  avgShrinkagePct Decimal     @db.Decimal(5, 2) @default(0)
+
+  fabrics         Fabric[]
+}
+
+model Fabric {
+  id              String              @id @default(uuid())
+  fabricTypeId    String
+  name            String              // "Linen Wildflower Blue 60 Lea"
+  colorName       String
+  colorHex        String?
+  costPerUnit     Decimal             @db.Decimal(10, 2)
+  leadTimeDays    Int                 @default(14)
+  minOrderQty     Decimal             @db.Decimal(10, 2) @default(50)
+  isActive        Boolean             @default(true)
+  createdAt       DateTime            @default(now())
+
+  fabricType      FabricType          @relation(fields: [fabricTypeId], references: [id])
+  variations      Variation[]
+  fabricTxns      FabricTransaction[]
+}
+
+model FabricTransaction {
+  id          String          @id @default(uuid())
+  fabricId    String
+  txnType     TransactionType
+  qty         Decimal         @db.Decimal(10, 3)
+  reason      FabricTxnReason
+  referenceId String?         // Link to production batch or PO
+  notes       String?
+  createdBy   String?
+  createdAt   DateTime        @default(now())
+
+  fabric      Fabric          @relation(fields: [fabricId], references: [id])
+}
+
+// Enums
+enum ProductCategory {
+  DRESS
+  TOP
+  BOTTOM
+  OUTERWEAR
+  ACCESSORY
+}
+
+enum ProductType {
+  BASIC
+  SEASONAL
+  LIMITED
+}
+
+enum Size {
+  XS
+  S
+  M
+  L
+  XL
+  XXL
+  FREE
+}
+
+enum TargetStockMethod {
+  SEVEN_DAY
+  FOURTEEN_DAY
+  TWENTY_EIGHT_DAY
+  MANUAL
+}
+
+enum FabricUnit {
+  METER
+  KG
+}
+
+enum TransactionType {
+  INWARD
+  OUTWARD
+}
+
+enum FabricTxnReason {
+  SUPPLIER_RECEIPT
+  PRODUCTION
+  SHRINKAGE
+  DAMAGE
+  ADJUSTMENT
+}
