@@ -2,6 +2,7 @@
   "name": "coh-erp",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "COH Internal ERP System",
   "scripts": {
     "dev": "pnpm run --parallel dev",
