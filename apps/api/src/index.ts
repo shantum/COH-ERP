@@ -1,6 +1,11 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import productsRouter from './routes/products.js';
+import variationsRouter from './routes/variations.js';
+import skusRouter from './routes/skus.js';
+import fabricsRouter from './routes/fabrics.js';
+import { errorHandler } from './middleware/errorHandler.js';
 
 dotenv.config();
 
@@ -24,9 +29,25 @@ app.get('/api/health', (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     message: 'COH Internal ERP API',
-    version: '1.0.0'
+    version: '1.0.0',
+    endpoints: {
+      products: '/api/products',
+      variations: '/api/variations',
+      skus: '/api/skus',
+      fabrics: '/api/fabrics',
+      fabricTypes: '/api/fabrics/fabric-types',
+    }
   });
 });
+
+// API Routes
+app.use('/api/products', productsRouter);
+app.use('/api/variations', variationsRouter);
+app.use('/api/skus', skusRouter);
+app.use('/api/fabrics', fabricsRouter);
+
+// Error handler (must be last)
+app.use(errorHandler);
 
 // Start server
 app.listen(PORT, () => {
